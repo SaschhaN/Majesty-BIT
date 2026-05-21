@@ -7,5 +7,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, Long> {
-    // Standard CRUD operations (save, findById, findAll) come built-in.
-}
+    }
