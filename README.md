@@ -325,6 +325,16 @@ Tables created automatically by Spring Boot:
 - `matches` — completed game sessions
 - `match_scores` — each player's score per match
 
+- See all users
+SELECT * FROM users;
+
+- See all matches
+SELECT * FROM matches;
+
+- See all match scores
+SELECT * FROM match_scores;
+
+
 ---
 
 ## 👥 Team
