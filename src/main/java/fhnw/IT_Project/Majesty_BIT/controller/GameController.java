@@ -1,77 +1,68 @@
 package fhnw.IT_Project.Majesty_BIT.controller;
 
-import fhnw.IT_Project.Majesty_BIT.dto.GameStateResponse;
-import fhnw.IT_Project.Majesty_BIT.dto.MoveRequest;
-import fhnw.IT_Project.Majesty_BIT.model.domain.GameState;
+import fhnw.IT_Project.Majesty_BIT.dto.*;
 import fhnw.IT_Project.Majesty_BIT.service.GameEngineService;
-import fhnw.IT_Project.Majesty_BIT.model.entity.*;
-import fhnw.IT_Project.Majesty_BIT.repository.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/games")
 public class GameController {
 
-    // Spring Boot injects service logic here
-    private final GameEngineService gameService;
+    @Autowired
+    private GameEngineService gameEngineService;
 
-    public GameController(GameEngineService gameService) {
-        this.gameService = gameService;
+    // POST /api/games/lobby/create
+    // Body: { "playerNames": ["Alice","Bot"], "aiFlags": [false, true], "maxTurns": 0 }
+    @PostMapping("/lobby/create")
+    public ResponseEntity<?> createGame(@RequestBody CreateGameRequest req) {
+        if (req.getPlayerNames() == null || req.getPlayerNames().size() < 2) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Need at least 2 players."));
+        }
+        String gameId = gameEngineService.createGame(req);
+        return ResponseEntity.ok(Map.of("gameId", gameId));
     }
 
-    /**
-     * Endpoint to handle a player's move.
-     * URL: POST http://localhost:8080/api/games/{gameId}/move
-     */
-    @PostMapping("/{gameId}/move")
-    public ResponseEntity<GameStateResponse> makeMove(
-            @PathVariable String gameId,
-            @RequestBody MoveRequest request) {
-
+    // GET /api/games/{gameId}
+    // Polling endpoint — clients call this every 1.5s
+    @GetMapping("/{gameId}")
+    public ResponseEntity<?> getGameState(@PathVariable String gameId) {
         try {
-            // 1. Passes the move to the server logic
-            GameState updatedState = gameService.processMove(
-                    gameId,
-                    request.getUsername(),
-                    request.getDisplayIndex()
-            );
+            return ResponseEntity.ok(gameEngineService.getGameState(gameId));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
-            // 2. Converts internal GameState to a safe GameStateResponse DTO
-            GameStateResponse response = convertToDto(updatedState);
-
-            // 3. Sends HTTP 200 OK with the new game state
-            return ResponseEntity.ok(response);
-
+    // POST /api/games/{gameId}/move
+    // Body: { "username": "Alice", "displayIndex": 2 }
+    @PostMapping("/{gameId}/move")
+    public ResponseEntity<?> makeMove(@PathVariable String gameId, @RequestBody MoveRequest move) {
+        try {
+            return ResponseEntity.ok(gameEngineService.processMove(gameId, move));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
-            // If the move is invalid (e.g., not their turn), send HTTP 400 Bad Request
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
-    // Controller for starting a game
-    @PostMapping("/start")
-    public ResponseEntity<GameStateResponse> startGame(@RequestBody List<String> playerNames) {
-        // 1. Creates the game logic
-        GameState newState = gameService.createGame(playerNames);
-
-        // 2. Returns the initial state so the frontend knows what cards are available
-        return ResponseEntity.ok(convertToDto(newState));
-    }
-
-    // Helper method to map GameState to GameStateResponse
-    private GameStateResponse convertToDto(GameState state) {
-        GameStateResponse dto = new GameStateResponse();
-        dto.setGameId(state.getGameId());
-        // ... rest of fields need to be mapped
-        dto.setCenterDisplay(state.getCenterDisplay());
-
-        // Safety check: ensures there are players before getting the username
-        if (state.getPlayers() != null && !state.getPlayers().isEmpty()) {
-            dto.setCurrentPlayerUsername(state.getCurrentPlayer().getUsername());
+    // POST /api/games/{gameId}/chat
+    // Body: { "sender": "Alice", "text": "Good move!" }
+    @PostMapping("/{gameId}/chat")
+    public ResponseEntity<?> sendChat(@PathVariable String gameId, @RequestBody ChatRequest req) {
+        try {
+            return ResponseEntity.ok(gameEngineService.sendChat(gameId, req));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         }
-        return dto;
     }
 }

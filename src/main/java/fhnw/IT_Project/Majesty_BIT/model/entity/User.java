@@ -1,7 +1,6 @@
 package fhnw.IT_Project.Majesty_BIT.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
 @Entity
 @Table(name = "users")

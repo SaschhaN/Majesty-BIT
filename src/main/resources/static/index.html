@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Majesty · BIT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0d0a07; --surface:#1a1208; --card-bg:#221a0e;
+      --border:#6b4e1a; --border-hi:#c8922a;
+      --gold:#d4a032; --gold-hi:#f0c060;
+      --cream:#f0e6cc; --muted:#8a7055;
+      --red:#c0392b; --green:#2ecc71;
+      --glow:rgba(212,160,50,0.18); --r:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--cream);font-family:'EB Garamond',serif;font-size:16px;min-height:100vh;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+    .page{display:none;animation:fadeIn .4s ease}
+    .page.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+    /* ── Shared centred layout ── */
+    .center-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(212,160,50,.12) 0%,transparent 70%)}
+    .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:2.2rem;width:100%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(212,160,50,.1)}
+    .box h2{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem;padding-bottom:.7rem;border-bottom:1px solid var(--border)}
+    .crest{font-size:3.5rem;margin-bottom:.5rem;filter:drop-shadow(0 0 20px rgba(212,160,50,.5));animation:float 4s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .game-title{font-family:'Cinzel Decorative',serif;font-size:clamp(2rem,6vw,3.2rem);color:var(--gold);text-shadow:0 0 40px rgba(212,160,50,.4);letter-spacing:.05em;margin-bottom:.3rem}
+    .game-subtitle{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:2.5rem}
+
+    label{display:block;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+    input[type=text],input[type=password],input[type=number],select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--cream);font-family:'EB Garamond',serif;font-size:1rem;padding:.6rem .85rem;margin-bottom:1.1rem;outline:none;transition:border-color .2s,box-shadow .2s}
+    input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--glow)}
+    select option{background:var(--surface)}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:'Cinzel',serif;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:4px;cursor:pointer;padding:.72rem 1.4rem;transition:all .2s;width:100%}
+    .btn-primary{background:linear-gradient(135deg,#b8861e,#d4a032,#c49228);color:#1a1208;font-weight:700;box-shadow:0 2px 12px rgba(212,160,50,.3)}
+    .btn-primary:hover{background:linear-gradient(135deg,#d4a032,#f0c060,#d4a032);box-shadow:0 4px 20px rgba(212,160,50,.5);transform:translateY(-1px)}
+    .btn-secondary{background:transparent;color:var(--gold);border:1px solid var(--border)}
+    .btn-secondary:hover{border-color:var(--gold);background:var(--glow)}
+    .btn-danger{background:transparent;color:#e07070;border:1px solid #7a2020}
+    .btn-danger:hover{background:rgba(192,57,43,.15);border-color:var(--red)}
+    .btn-sm{padding:.38rem .85rem;font-size:.72rem;width:auto}
+    .btn-row{display:flex;gap:.7rem;margin-top:.5rem}
+    .divider{border:none;border-top:1px solid var(--border);margin:.8rem 0}
+
+    /* ── Nav tabs (login screen) ── */
+    .tab-row{display:flex;gap:0;margin-bottom:1.4rem;border-bottom:1px solid var(--border)}
+    .tab{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none}
+    .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+    /* ── Lobby setup ── */
+    .player-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem}
+    .player-row input{margin-bottom:0;flex:1}
+    .player-num{font-family:'Cinzel',serif;font-size:.72rem;color:var(--muted);width:20px;text-align:center;flex-shrink:0}
+    .ai-toggle{display:flex;align-items:center;gap:.3rem;font-family:'Cinzel',serif;font-size:.68rem;color:var(--muted);flex-shrink:0;cursor:pointer;white-space:nowrap}
+    .ai-toggle input{width:auto;margin-bottom:0;cursor:pointer;accent-color:var(--gold)}
+
+    /* ── Identity picker ── */
+    #identity-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(212,160,50,.1) 0%,transparent 70%)}
+    .identity-intro{text-align:center;margin-bottom:1.8rem}
+    .identity-intro .big-icon{font-size:3rem;margin-bottom:.6rem;filter:drop-shadow(0 0 14px rgba(212,160,50,.4))}
+    .identity-intro h1{font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.3rem}
+    .identity-intro p{font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.08em;color:var(--muted)}
+    .identity-box{background:var(--surface);border:1px solid var(--border-hi);border-radius:var(--r);padding:1.8rem;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+    .identity-box h2{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .identity-buttons{display:flex;flex-direction:column;gap:.6rem}
+    .identity-btn{display:flex;align-items:center;gap:.9rem;background:var(--card-bg);border:2px solid var(--border);border-radius:var(--r);padding:.9rem 1.1rem;cursor:pointer;transition:all .2s;color:var(--cream);font-family:'Cinzel',serif;font-size:.95rem;text-align:left;width:100%}
+    .identity-btn:hover{border-color:var(--gold);background:rgba(212,160,50,.08);transform:translateX(4px)}
+    .identity-btn .avatar{width:42px;height:42px;border-radius:50%;background:rgba(212,160,50,.12);border:1px solid var(--border-hi);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+    .identity-btn .info{flex:1}
+    .identity-btn .info .pname{font-weight:600;font-size:1rem}
+    .identity-btn .info .psub{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:.15rem}
+    .identity-btn .arrow{color:var(--gold);font-size:1.2rem}
+    .ai-badge{font-size:.6rem;background:rgba(100,180,255,.15);color:#80c8ff;border:1px solid rgba(100,180,255,.3);border-radius:8px;padding:.1rem .4rem;text-transform:uppercase;font-family:'Cinzel',serif;margin-left:.3rem}
+
+    /* ── Game screen ── */
+    #game-screen{min-height:100vh}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.65rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.5);flex-wrap:wrap}
+    .topbar-left{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+    .topbar-title{font-family:'Cinzel Decorative',serif;font-size:1rem;color:var(--gold)}
+    .playing-as{display:flex;align-items:center;gap:.35rem;background:rgba(212,160,50,.1);border:1px solid var(--border);border-radius:20px;padding:.28rem .75rem;font-family:'Cinzel',serif;font-size:.72rem;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap}
+    .playing-as:hover{border-color:var(--gold);background:rgba(212,160,50,.18)}
+    .playing-as strong{color:var(--gold-hi)}
+    .lang-btn{font-family:'Cinzel',serif;font-size:.7rem;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:.28rem .6rem;cursor:pointer;transition:all .2s}
+    .lang-btn:hover,.lang-btn.active{border-color:var(--gold);color:var(--gold)}
+    .turn-badge{font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.08em;padding:.32rem .85rem;border-radius:20px;border:1px solid var(--border-hi);color:var(--gold-hi);background:rgba(212,160,50,.1);white-space:nowrap}
+    .turn-badge.your-turn{background:rgba(212,160,50,.25);border-color:var(--gold);animation:pulse 2s ease-in-out infinite}
+    .turn-badge.ai-turn{background:rgba(100,180,255,.1);border-color:rgba(100,180,255,.4);color:#80c8ff}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(212,160,50,.4)}50%{box-shadow:0 0 0 6px rgba(212,160,50,0)}}
+
+    /* ── Game layout ── */
+    .game-layout{display:grid;grid-template-columns:1fr 290px;min-height:calc(100vh - 50px)}
+    .main-area{padding:1.3rem;display:flex;flex-direction:column;gap:1.3rem;border-right:1px solid var(--border)}
+    .section-header{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:.7rem}
+    .section-header::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* Cards */
+    .market-grid{display:flex;flex-wrap:wrap;gap:.9rem}
+    .card{width:115px;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--r);padding:.9rem .75rem .75rem;display:flex;flex-direction:column;align-items:center;gap:.45rem;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--border-hi),transparent);opacity:0;transition:opacity .2s}
+    .card:hover{transform:translateY(-4px);border-color:var(--border-hi);box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 18px var(--glow)}
+    .card:hover::before{opacity:1}
+    .card.disabled{opacity:.35;cursor:not-allowed}
+    .card.disabled:hover{transform:none;border-color:var(--border);box-shadow:none}
+    .card-icon{font-size:2rem;line-height:1}
+    .card-name{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--cream);text-align:center}
+    .card-points{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);background:rgba(212,160,50,.1);border:1px solid rgba(212,160,50,.3);border-radius:10px;padding:.12rem .45rem}
+    .card-index{position:absolute;top:.25rem;right:.35rem;font-family:'Cinzel',serif;font-size:.58rem;color:var(--muted)}
+
+    .deck-info{display:flex;align-items:center;gap:.9rem;padding:.7rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:'Cinzel',serif;font-size:.78rem}
+    .deck-count{font-size:1.3rem;color:var(--gold);font-weight:700}
+    .deck-label{color:var(--muted);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}
+    .turns-info{font-family:'Cinzel',serif;font-size:.75rem;color:var(--muted)}
+
+    .my-kingdom{background:var(--surface);border:1px solid var(--border-hi);border-radius:var(--r);padding:1.1rem;box-shadow:inset 0 0 30px rgba(212,160,50,.04)}
+    .kingdom-cards{display:flex;flex-wrap:wrap;gap:.45rem}
+    .kingdom-card-chip{display:flex;align-items:center;gap:.35rem;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;padding:.28rem .65rem;font-family:'Cinzel',serif;font-size:.68rem;color:var(--cream)}
+    .chip-count{background:rgba(212,160,50,.15);color:var(--gold);border-radius:10px;padding:0 .38rem;font-size:.62rem}
+    .my-score-row{display:flex;align-items:baseline;gap:.45rem;margin-top:.9rem;padding-top:.7rem;border-top:1px solid var(--border)}
+    .my-score-num{font-family:'Cinzel Decorative',serif;font-size:1.9rem;color:var(--gold);text-shadow:0 0 20px rgba(212,160,50,.4)}
+    .my-score-label{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+    .pass-banner{background:rgba(212,160,50,.1);border:1px solid var(--gold);border-radius:var(--r);padding:.8rem 1.1rem;font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold-hi);text-align:center;line-height:1.5}
+    .ai-banner{background:rgba(100,180,255,.08);border:1px solid rgba(100,180,255,.3);border-radius:var(--r);padding:.8rem 1.1rem;font-family:'Cinzel',serif;font-size:.82rem;color:#80c8ff;text-align:center}
+
+    /* ── Sidebar ── */
+    .sidebar{background:var(--surface);padding:1rem;display:flex;flex-direction:column;gap:.9rem;overflow-y:auto}
+    .player-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--r);padding:.85rem .95rem;transition:border-color .2s}
+    .player-card.active-player{border-color:var(--gold);box-shadow:0 0 14px rgba(212,160,50,.2)}
+    .player-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem}
+    .player-name-row{font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:var(--cream);display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+    .player-score-badge{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);background:rgba(212,160,50,.12);border:1px solid rgba(212,160,50,.3);border-radius:10px;padding:.12rem .45rem}
+    .player-cards-mini{display:flex;flex-wrap:wrap;gap:.22rem}
+    .mini-chip{font-size:.62rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.08rem .38rem;color:var(--muted)}
+    .active-indicator{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 7px var(--gold);flex-shrink:0}
+    .me-tag{font-size:.58rem;letter-spacing:.08em;background:rgba(212,160,50,.2);color:var(--gold);border:1px solid rgba(212,160,50,.4);border-radius:8px;padding:.08rem .38rem;text-transform:uppercase;font-family:'Cinzel',serif}
+
+    /* ── Chat ── */
+    .chat-section{display:flex;flex-direction:column;gap:.5rem}
+    .chat-messages{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.7rem;height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:.35rem}
+    .chat-msg{font-size:.82rem;line-height:1.4}
+    .chat-msg .chat-sender{font-family:'Cinzel',serif;font-size:.68rem;color:var(--gold);margin-right:.4rem}
+    .chat-msg .chat-time{font-size:.62rem;color:var(--muted);margin-left:.3rem}
+    .chat-input-row{display:flex;gap:.4rem}
+    .chat-input-row input{margin-bottom:0;flex:1;padding:.5rem .75rem;font-size:.88rem}
+    .chat-send{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;background:rgba(212,160,50,.15);border:1px solid var(--border);color:var(--gold);border-radius:4px;padding:.5rem .85rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .chat-send:hover{background:rgba(212,160,50,.25);border-color:var(--gold)}
+
+    /* ── Leaderboard (shown in winner screen) ── */
+    .leaderboard-table{width:100%;border-collapse:collapse;font-family:'Cinzel',serif;font-size:.78rem}
+    .leaderboard-table th{color:var(--muted);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .8rem;text-align:left;border-bottom:1px solid var(--border)}
+    .leaderboard-table td{padding:.55rem .8rem;border-bottom:1px solid rgba(107,78,26,.25);color:var(--cream)}
+    .leaderboard-table tr:last-child td{border-bottom:none}
+    .leaderboard-table .rank-1 td{color:var(--gold)}
+    .lb-wins{color:var(--gold);font-weight:700}
+
+    /* ── Winner screen ── */
+    #winner-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(212,160,50,.12) 0%,transparent 70%);text-align:center}
+    .trophy{font-size:4.5rem;animation:float 3s ease-in-out infinite;margin-bottom:.8rem;filter:drop-shadow(0 0 28px rgba(212,160,50,.6))}
+    .winner-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,5vw,2.5rem);color:var(--gold);text-shadow:0 0 40px rgba(212,160,50,.5);margin-bottom:.45rem}
+    .winner-msg{font-family:'Cinzel',serif;font-size:1.05rem;color:var(--cream);margin-bottom:1.8rem}
+    .scoreboard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;width:100%;max-width:460px;margin-bottom:1.5rem}
+    .scoreboard-header{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:.65rem 1.1rem;background:var(--bg);border-bottom:1px solid var(--border)}
+    .score-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.1rem;border-bottom:1px solid var(--border)}
+    .score-row:last-child{border-bottom:none}
+    .score-row.winner-row{background:rgba(212,160,50,.08)}
+    .score-player{font-family:'Cinzel',serif;font-size:.88rem;display:flex;align-items:center;gap:.55rem}
+    .score-pts{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);font-weight:700}
+    .rank-badge{width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;background:var(--border);color:var(--muted)}
+    .rank-badge.rank-1{background:var(--gold);color:#1a1208}
+
+    /* ── Toasts ── */
+    .toast-container{position:fixed;top:1rem;right:1rem;z-index:9000;display:flex;flex-direction:column;gap:.45rem}
+    .toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:.65rem .95rem;font-family:'Cinzel',serif;font-size:.76rem;color:var(--cream);max-width:290px;box-shadow:0 4px 16px rgba(0,0,0,.5);animation:slideIn .3s ease}
+    .toast.toast-error{border-left-color:var(--red)}
+    .toast.toast-success{border-left-color:var(--green)}
+    .toast.toast-info{border-left-color:#60a8ff}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+    .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:700px){.game-layout{grid-template-columns:1fr}.sidebar{border-top:1px solid var(--border)}.card{width:100px}}
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════ LOGIN / REGISTER ══════════ -->
+<div class="page active" id="login-screen">
+  <div class="center-screen">
+    <div class="crest">⚜️</div>
+    <div class="game-title">Majesty</div>
+    <div class="game-subtitle" id="subtitle-login">Kingdom of Cards · BIT Edition</div>
+
+    <div class="box">
+      <div class="tab-row">
+        <button class="tab active" onclick="switchTab('login')" id="tab-login" data-i18n="login">Login</button>
+        <button class="tab" onclick="switchTab('register')" id="tab-register" data-i18n="register">Register</button>
+        <button class="tab" onclick="switchTab('guest')" id="tab-guest" data-i18n="guest">Guest</button>
+      </div>
+
+      <!-- Login form -->
+      <div id="form-login">
+        <label data-i18n="username">Username</label>
+        <input type="text" id="login-username" placeholder="Enter username"/>
+        <label data-i18n="password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter password"/>
+        <button class="btn btn-primary" onclick="doLogin()" id="loginBtn">⚔️ &nbsp;<span data-i18n="loginBtn">Enter the Kingdom</span></button>
+      </div>
+
+      <!-- Register form -->
+      <div id="form-register" style="display:none">
+        <label data-i18n="username">Username</label>
+        <input type="text" id="reg-username" placeholder="Choose username"/>
+        <label data-i18n="password">Password</label>
+        <input type="password" id="reg-password" placeholder="Choose password (min 3 chars)"/>
+        <button class="btn btn-primary" onclick="doRegister()" id="regBtn">✨ &nbsp;<span data-i18n="createAccount">Create Account</span></button>
+      </div>
+
+      <!-- Guest form -->
+      <div id="form-guest" style="display:none">
+        <label data-i18n="guestName">Play as Guest</label>
+        <input type="text" id="guest-username" placeholder="Enter your name"/>
+        <button class="btn btn-primary" onclick="doGuest()">🎭 &nbsp;<span data-i18n="playAsGuest">Continue as Guest</span></button>
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.7rem;line-height:1.5;" data-i18n="guestNote">Guest scores are not saved to the leaderboard.</p>
+      </div>
+
+      <hr class="divider">
+      <div style="display:flex;gap:.5rem;justify-content:center">
+        <button class="lang-btn active" onclick="setLang('en')" id="lang-en">🇬🇧 EN</button>
+        <button class="lang-btn" onclick="setLang('de')" id="lang-de">🇩🇪 DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LOBBY / GAME SETUP ══════════ -->
+<div class="page" id="lobby-screen">
+  <div class="center-screen">
+    <div class="crest">⚜️</div>
+    <div class="game-title">Majesty</div>
+    <div class="game-subtitle" data-i18n="subtitle">Kingdom of Cards · BIT Edition</div>
+
+    <div class="box">
+      <h2 data-i18n="newGame">Begin a New Reign</h2>
+
+      <label data-i18n="numPlayers">Number of Players</label>
+      <select id="playerCount" onchange="updatePlayerInputs()">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+
+      <label data-i18n="playerNames">Player Names &amp; AI Settings</label>
+      <div id="playerInputs"></div>
+
+      <label data-i18n="endCondition">End Condition</label>
+      <select id="maxTurns">
+        <option value="0" data-i18n="deckEmpty">Play until deck is empty (default)</option>
+        <option value="10">10 turns total</option>
+        <option value="20">20 turns total</option>
+        <option value="30">30 turns total</option>
+      </select>
+
+      <button class="btn btn-primary" onclick="startGame()" id="startBtn">⚔️ &nbsp;<span data-i18n="beginGame">Begin the Game</span></button>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="showLeaderboardScreen()">🏆 &nbsp;<span data-i18n="leaderboard">Leaderboard</span></button>
+        <button class="btn btn-danger" onclick="location.reload()">✕ &nbsp;<span data-i18n="logout">Logout</span></button>
+      </div>
+
+      <hr class="divider">
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">
+        <span data-i18n="serverNote">Server must be running at</span>
+        <span style="color:var(--gold)">localhost:8080</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ IDENTITY PICKER ══════════ -->
+<div class="page" id="identity-screen">
+  <div class="identity-intro">
+    <div class="big-icon">🎭</div>
+    <h1 data-i18n="whoAreYou">Who Are You?</h1>
+    <p data-i18n="selectCharacter">Select your name to take your turns</p>
+  </div>
+  <div class="identity-box">
+    <h2 data-i18n="chooseCharacter">Choose Your Character</h2>
+    <div class="identity-buttons" id="identityButtons"></div>
+  </div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="page" id="game-screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">⚜️ Majesty</div>
+      <div class="playing-as" onclick="switchIdentity()" title="Switch player">
+        🎭 <span data-i18n="playingAs">Playing as</span> <strong id="playingAsLabel">—</strong> &nbsp;↺
+      </div>
+      <button class="lang-btn" onclick="setLang('en')" id="game-lang-en">🇬🇧</button>
+      <button class="lang-btn" onclick="setLang('de')" id="game-lang-de">🇩🇪</button>
+    </div>
+    <div class="turn-badge" id="turnBadge">Loading…</div>
+    <div style="display:flex;gap:.4rem">
+      <button class="btn btn-secondary btn-sm" onclick="pollGameState()">↺</button>
+      <button class="btn btn-secondary btn-sm" onclick="goToLobby()" data-i18n="quit">Quit</button>
+    </div>
+  </div>
+
+  <div class="game-layout">
+    <div class="main-area">
+      <div id="passBanner" style="display:none" class="pass-banner"></div>
+      <div id="aiBanner" style="display:none" class="ai-banner">🤖 AI is thinking…</div>
+
+      <div>
+        <div class="section-header" data-i18n="market">Market — Choose a Card</div>
+        <div class="market-grid" id="marketGrid"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div class="deck-info">
+          <div>
+            <div class="deck-count" id="deckCount">—</div>
+            <div class="deck-label" data-i18n="cardsInDisplay">Cards in Display</div>
+          </div>
+        </div>
+        <div class="turns-info" id="turnsInfo"></div>
+        <div id="gameIdDisplay" style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--muted);letter-spacing:.1em"></div>
+      </div>
+
+      <div class="my-kingdom">
+        <div class="section-header" style="margin-bottom:.7rem">
+          <span data-i18n="myKingdom">My Kingdom</span> — <span id="myKingdomLabel" style="color:var(--gold-hi)">—</span>
+        </div>
+        <div class="kingdom-cards" id="myKingdomCards">
+          <span style="color:var(--muted);font-size:.85rem;font-style:italic" data-i18n="noCards">No cards yet</span>
+        </div>
+        <div class="my-score-row">
+          <div class="my-score-num" id="myScore">0</div>
+          <div class="my-score-label" data-i18n="points">points</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="section-header" style="margin-bottom:0" data-i18n="allPlayers">All Players</div>
+      <div id="playersList"></div>
+
+      <hr class="divider" style="margin:.2rem 0">
+
+      <!-- Chat -->
+      <div class="chat-section">
+        <div class="section-header" style="margin-bottom:.4rem" data-i18n="chat">Chat</div>
+        <div class="chat-messages" id="chatMessages">
+          <span style="color:var(--muted);font-size:.78rem;font-style:italic" data-i18n="chatPlaceholder">No messages yet…</span>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Message…" onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button class="chat-send" onclick="sendChat()" data-i18n="send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LEADERBOARD ══════════ -->
+<div class="page" id="leaderboard-screen">
+  <div class="center-screen">
+    <div style="font-size:3rem;margin-bottom:.6rem;filter:drop-shadow(0 0 16px rgba(212,160,50,.4))">🏆</div>
+    <div class="game-title" style="font-size:2rem" data-i18n="leaderboard">Leaderboard</div>
+    <div class="game-subtitle" data-i18n="topPlayers">Top Players</div>
+
+    <div class="box" style="max-width:520px">
+      <h2 data-i18n="hallOfFame">Hall of Fame</h2>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th data-i18n="player">Player</th>
+            <th data-i18n="wins">Wins</th>
+            <th data-i18n="games">Games</th>
+            <th data-i18n="winRate">Win %</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1rem">Loading…</td></tr>
+        </tbody>
+      </table>
+      <hr class="divider">
+      <button class="btn btn-secondary" onclick="showScreen('lobby-screen')" data-i18n="back">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WINNER ══════════ -->
+<div class="page" id="winner-screen">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(212,160,50,.12) 0%,transparent 70%);text-align:center">
+    <div class="trophy">🏆</div>
+    <div class="winner-title" id="winnerTitle" data-i18n="victory">Victory!</div>
+    <div class="winner-msg" id="winnerMsg"></div>
+
+    <div class="scoreboard">
+      <div class="scoreboard-header" data-i18n="finalScores">Final Scores</div>
+      <div id="scoreboardRows"></div>
+    </div>
+
+    <!-- Leaderboard inline on winner screen -->
+    <div class="box" style="max-width:460px;margin-bottom:1.5rem">
+      <h2 data-i18n="leaderboard">Leaderboard</h2>
+      <table class="leaderboard-table">
+        <thead>
+          <tr><th>#</th><th data-i18n="player">Player</th><th data-i18n="wins">Wins</th><th data-i18n="games">Games</th><th>%</th></tr>
+        </thead>
+        <tbody id="winnerLeaderboard"><tr><td colspan="5" style="text-align:center;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <button class="btn btn-primary" style="max-width:260px" onclick="location.reload()">♻️ &nbsp;<span data-i18n="playAgain">Play Again</span></button>
+  </div>
+</div>
+
+<!-- ══════════ SCRIPT ══════════ -->
+<script>
+const API = 'http://localhost:8080/api/games';
+const USER_API = 'http://localhost:8080/api/users';
+
+let gameId     = null;
+let myUsername = null;
+let allPlayers = [];
+let aiFlags    = [];
+let pollTimer  = null;
+let lastActive = null;
+let lastState  = null;
+let loggedInUser = null; // null for guests
+let lang = 'en';
+
+// ── i18n translations ─────────────────────────────
+const T = {
+  en: {
+    login:'Login', register:'Register', guest:'Guest',
+    username:'Username', password:'Password',
+    loginBtn:'Enter the Kingdom', createAccount:'Create Account',
+    guestName:'Play as Guest', playAsGuest:'Continue as Guest',
+    guestNote:'Guest scores are not saved to the leaderboard.',
+    subtitle:'Kingdom of Cards · BIT Edition',
+    newGame:'Begin a New Reign', numPlayers:'Number of Players',
+    playerNames:'Player Names & AI Settings', endCondition:'End Condition',
+    deckEmpty:'Play until deck is empty (default)',
+    beginGame:'Begin the Game', leaderboard:'Leaderboard',
+    logout:'Logout', serverNote:'Server must be running at',
+    whoAreYou:'Who Are You?', selectCharacter:'Select your name to take your turns',
+    chooseCharacter:'Choose Your Character',
+    playingAs:'Playing as', quit:'Quit',
+    market:'Market — Choose a Card', cardsInDisplay:'Cards in Display',
+    myKingdom:'My Kingdom', noCards:'No cards yet', points:'points',
+    allPlayers:'All Players', chat:'Chat',
+    chatPlaceholder:'No messages yet…', send:'Send',
+    topPlayers:'Top Players', hallOfFame:'Hall of Fame',
+    player:'Player', wins:'Wins', games:'Games', winRate:'Win %',
+    back:'← Back', victory:'Victory!', finalScores:'Final Scores',
+    playAgain:'Play Again', yourTurn:'Your Turn — Pick a Card!',
+    waitingFor:'Waiting for', aiThinking:'🤖 AI is thinking…',
+    passBannerMsg:"It's {name}'s turn. Pass the keyboard to {name}, then click \"Playing as\" above.",
+    draftedCard:'{name} drafted a card',
+    gameCreated:'Game created!', notYourTurn:'Not your turn!',
+    invalidMove:'Invalid move.',
+  },
+  de: {
+    login:'Anmelden', register:'Registrieren', guest:'Gast',
+    username:'Benutzername', password:'Passwort',
+    loginBtn:'Das Königreich betreten', createAccount:'Konto erstellen',
+    guestName:'Als Gast spielen', playAsGuest:'Als Gast fortfahren',
+    guestNote:'Gast-Ergebnisse werden nicht in der Bestenliste gespeichert.',
+    subtitle:'Kartenkönigreiche · BIT Ausgabe',
+    newGame:'Eine neue Herrschaft beginnen', numPlayers:'Anzahl Spieler',
+    playerNames:'Spielernamen & KI-Einstellungen', endCondition:'Endbedingung',
+    deckEmpty:'Spielen bis der Stapel leer ist (Standard)',
+    beginGame:'Spiel starten', leaderboard:'Bestenliste',
+    logout:'Abmelden', serverNote:'Server muss laufen unter',
+    whoAreYou:'Wer bist du?', selectCharacter:'Wähle deinen Namen für deinen Zug',
+    chooseCharacter:'Wähle deinen Charakter',
+    playingAs:'Spielen als', quit:'Beenden',
+    market:'Markt — Wähle eine Karte', cardsInDisplay:'Karten im Display',
+    myKingdom:'Mein Königreich', noCards:'Noch keine Karten', points:'Punkte',
+    allPlayers:'Alle Spieler', chat:'Chat',
+    chatPlaceholder:'Noch keine Nachrichten…', send:'Senden',
+    topPlayers:'Top Spieler', hallOfFame:'Ruhmeshalle',
+    player:'Spieler', wins:'Siege', games:'Spiele', winRate:'Gewinn %',
+    back:'← Zurück', victory:'Sieg!', finalScores:'Endpunkte',
+    playAgain:'Nochmal spielen', yourTurn:'Dein Zug — Wähle eine Karte!',
+    waitingFor:'Warten auf', aiThinking:'🤖 KI denkt nach…',
+    passBannerMsg:'{name} ist dran. Gib die Tastatur an {name} weiter.',
+    draftedCard:'{name} hat eine Karte gezogen',
+    gameCreated:'Spiel erstellt!', notYourTurn:'Nicht dein Zug!',
+    invalidMove:'Ungültiger Zug.',
+  }
+};
+
+function t(key, vars={}) {
+  let s = (T[lang] && T[lang][key]) || T.en[key] || key;
+  for (const [k,v] of Object.entries(vars)) s = s.replaceAll('{'+k+'}', v);
+  return s;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  // Also update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('lang-'+lang)?.classList.add('active');
+  document.getElementById('game-lang-'+lang)?.classList.add('active');
+}
+
+function setLang(l) {
+  lang = l;
+  applyTranslations();
+}
+
+// ── Screens ────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goToLobby() {
+  stopPolling();
+  gameId = myUsername = lastActive = lastState = null;
+  allPlayers = []; aiFlags = [];
+  showScreen('lobby-screen');
+  updatePlayerInputs();
+}
+
+// ── Tab switching (login screen) ───────────────────
+function switchTab(tab) {
+  ['login','register','guest'].forEach(t => {
+    document.getElementById('form-'+t).style.display = t===tab ? 'block' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+// ── Auth ───────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) { showToast(t('username')+' / '+t('password')+' required', 'error'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${USER_API}/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error, 'error'); return; }
+    loggedInUser = data.username;
+    showToast('Welcome back, '+loggedInUser+'! 👑', 'success');
+    enterLobby(loggedInUser);
+  } catch(e) { showToast('Server unreachable.', 'error'); }
+  finally { btn.innerHTML = '⚔️ &nbsp;'+t('loginBtn'); btn.disabled = false; }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!username || !password) { showToast('Fill in all fields.', 'error'); return; }
+
+  const btn = document.getElementById('regBtn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${USER_API}/register`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error, 'error'); return; }
+    showToast('Account created! Please log in.', 'success');
+    switchTab('login');
+    document.getElementById('login-username').value = username;
+  } catch(e) { showToast('Server unreachable.', 'error'); }
+  finally { btn.innerHTML = '✨ &nbsp;'+t('createAccount'); btn.disabled = false; }
+}
+
+function doGuest() {
+  const name = document.getElementById('guest-username').value.trim();
+  if (!name) { showToast('Enter your name.', 'error'); return; }
+  loggedInUser = null; // guests have no account
+  enterLobby(name);
+}
+
+function enterLobby(username) {
+  // Pre-fill first player slot with logged-in name
+  showScreen('lobby-screen');
+  updatePlayerInputs();
+  setTimeout(() => {
+    const first = document.getElementById('pname0');
+    if (first) { first.value = username; first.readOnly = true; }
+  }, 50);
+}
+
+// ── Lobby setup ────────────────────────────────────
+function updatePlayerInputs() {
+  const n = parseInt(document.getElementById('playerCount')?.value || 2);
+  const defaults = ['Alice','Bob','Carol','Dave'];
+  document.getElementById('playerInputs').innerHTML =
+    Array.from({length:n}, (_,i) => `
+      <div class="player-row">
+        <span class="player-num">${i+1}.</span>
+        <input type="text" id="pname${i}" value="${defaults[i]||''}" placeholder="Player ${i+1}"/>
+        <label class="ai-toggle">
+          <input type="checkbox" id="ai${i}" ${i===0?'disabled':''}/>
+          🤖 AI
+        </label>
+      </div>`).join('');
+}
+
+async function startGame() {
+  const n = parseInt(document.getElementById('playerCount').value);
+  const names=[], flags=[];
+  for (let i=0; i<n; i++) {
+    const v = document.getElementById(`pname${i}`).value.trim();
+    if (!v) { showToast('Fill in all player names.', 'error'); return; }
+    names.push(v);
+    flags.push(document.getElementById(`ai${i}`).checked);
+  }
+  const maxTurns = parseInt(document.getElementById('maxTurns').value);
+
+  const btn = document.getElementById('startBtn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/lobby/create`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({playerNames:names, aiFlags:flags, maxTurns})
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    gameId = data.gameId;
+    allPlayers = names;
+    aiFlags = flags;
+    showToast(t('gameCreated'), 'success');
+    showIdentityScreen();
+  } catch(e) {
+    showToast('Cannot reach server. Is it running?', 'error');
+  } finally {
+    btn.innerHTML = '⚔️ &nbsp;'+t('beginGame');
+    btn.disabled = false;
+  }
+}
+
+// ── Identity picker ────────────────────────────────
+const AVATARS = ['👸','🤴','🧙','🏹'];
+function showIdentityScreen() {
+  // Filter out AI players — only human players need to pick
+  const humanPlayers = allPlayers.filter((_,i) => !aiFlags[i]);
+  if (humanPlayers.length === 0) {
+    // All AI — shouldn't happen but just in case
+    selectIdentity(allPlayers[0]);
+    return;
+  }
+  document.getElementById('identityButtons').innerHTML =
+    allPlayers.map((name,i) => {
+      if (aiFlags[i]) return ''; // skip AI slots
+      return `
+        <button class="identity-btn" onclick="selectIdentity('${name}')">
+          <div class="avatar">${AVATARS[i]||'🎭'}</div>
+          <div class="info">
+            <div class="pname">${name}</div>
+            <div class="psub">${t('playingAs')} ${name}</div>
+          </div>
+          <div class="arrow">→</div>
+        </button>`;
+    }).join('');
+  showScreen('identity-screen');
+}
+
+function selectIdentity(name) {
+  myUsername = name;
+  document.getElementById('playingAsLabel').textContent = name;
+  document.getElementById('myKingdomLabel').textContent = name;
+  document.getElementById('gameIdDisplay').textContent = 'Game ID: '+gameId;
+  showScreen('game-screen');
+  if (lastState) renderGameState(lastState);
+  else pollGameState();
+  startPolling();
+}
+
+function switchIdentity() {
+  stopPolling();
+  showIdentityScreen();
+}
+
+// ── Polling ────────────────────────────────────────
+function startPolling() { stopPolling(); pollTimer = setInterval(pollGameState, 1500); }
+function stopPolling()  { if (pollTimer) { clearInterval(pollTimer); pollTimer=null; } }
+
+async function pollGameState() {
+  if (!gameId) return;
+  try {
+    const res = await fetch(`${API}/${gameId}`);
+    if (!res.ok) return;
+    const state = await res.json();
+    lastState = state;
+    renderGameState(state);
+    if (state.finished) { stopPolling(); setTimeout(()=>showWinner(state), 700); }
+  } catch(_) {}
+}
+
+// ── Render ─────────────────────────────────────────
+const CARD_INFO = {
+  MILLER:{icon:'🌾',pts:1}, BREWER:{icon:'🍺',pts:2}, WITCH:{icon:'🧙',pts:4},
+  GUARD:{icon:'🛡️',pts:3}, KNIGHT:{icon:'⚔️',pts:3},
+  INNKEEPER:{icon:'🏠',pts:2}, NOBLE:{icon:'👑',pts:5},
+};
+function ci(t)  { return CARD_INFO[t]||{icon:'🃏',pts:'?'}; }
+function cl(t)  { return t ? t.charAt(0)+t.slice(1).toLowerCase() : '?'; }
+
+function renderGameState(state) {
+  const isMyTurn = state.activePlayerName === myUsername;
+  const isAITurn = state.activePlayerIsAI;
+
+  // Turn badge
+  const badge = document.getElementById('turnBadge');
+  if (isAITurn) {
+    badge.textContent = t('aiThinking');
+    badge.className = 'turn-badge ai-turn';
+  } else if (isMyTurn) {
+    badge.textContent = '⚔️ '+t('yourTurn');
+    badge.className = 'turn-badge your-turn';
+  } else {
+    badge.textContent = '⏳ '+t('waitingFor')+' '+state.activePlayerName+'…';
+    badge.className = 'turn-badge';
+  }
+
+  // Banners
+  document.getElementById('aiBanner').style.display = isAITurn ? 'block' : 'none';
+  const passBanner = document.getElementById('passBanner');
+  if (!isMyTurn && !isAITurn) {
+    passBanner.style.display = 'block';
+    passBanner.textContent = t('passBannerMsg',{name:state.activePlayerName});
+  } else {
+    passBanner.style.display = 'none';
+  }
+
+  // Turn change notification
+  if (state.activePlayerName !== lastActive) {
+    lastActive = state.activePlayerName;
+    if (!isMyTurn && !isAITurn) showToast('Pass keyboard to '+state.activePlayerName, 'info');
+  }
+
+  renderMarket(state.centerDisplay, isMyTurn);
+
+  // Deck / turns info
+  document.getElementById('deckCount').textContent = state.centerDisplay.length;
+  const turnsEl = document.getElementById('turnsInfo');
+  if (state.maxTurns > 0) {
+    turnsEl.textContent = 'Turn '+state.turnCount+' / '+state.maxTurns;
+  } else {
+    turnsEl.textContent = 'Turn '+state.turnCount;
+  }
+
+  const me = state.playerSummaries.find(p => p.username === myUsername);
+  if (me) renderMyKingdom(me);
+
+  renderPlayers(state.playerSummaries, state.activePlayerName);
+  renderChat(state.chatMessages);
+}
+
+function renderMarket(cards, isMyTurn) {
+  const grid = document.getElementById('marketGrid');
+  if (!cards || cards.length === 0) {
+    grid.innerHTML = '<span style="color:var(--muted);font-style:italic">The market is empty…</span>';
+    return;
+  }
+  grid.innerHTML = cards.map((type,i) => {
+    const info = ci(type);
+    return `
+      <div class="card ${!isMyTurn?'disabled':''}"
+           onclick="${isMyTurn?`pickCard(${i})`:''}"
+           title="${isMyTurn?'Click to draft':'Not your turn'}">
+        <span class="card-index">#${i}</span>
+        <div class="card-icon">${info.icon}</div>
+        <div class="card-name">${cl(type)}</div>
+        <div class="card-points">${info.pts} pt${info.pts!==1?'s':''}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderMyKingdom(me) {
+  document.getElementById('myScore').textContent = me.score;
+  const entries = Object.entries(me.cards).filter(([,v])=>v>0);
+  document.getElementById('myKingdomCards').innerHTML = entries.length
+    ? entries.map(([name,count]) => {
+        const info = ci(name.toUpperCase());
+        return `<div class="kingdom-card-chip">${info.icon} ${name} <span class="chip-count">×${count}</span></div>`;
+      }).join('')
+    : `<span style="color:var(--muted);font-size:.85rem;font-style:italic">${t('noCards')}</span>`;
+}
+
+function renderPlayers(players, activePlayer) {
+  document.getElementById('playersList').innerHTML = players.map((p,i) => {
+    const isActive = p.username === activePlayer;
+    const isMe = p.username === myUsername;
+    const chips = Object.entries(p.cards).filter(([,v])=>v>0)
+      .map(([n,c]) => `<span class="mini-chip">${ci(n.toUpperCase()).icon} ${n} ×${c}</span>`).join('')
+      || `<span style="color:var(--muted);font-size:.7rem;font-style:italic">${t('noCards')}</span>`;
+    return `
+      <div class="player-card ${isActive?'active-player':''}">
+        <div class="player-card-header">
+          <div class="player-name-row">
+            ${isActive?'<span class="active-indicator"></span>':''}
+            ${AVATARS[i]||'🎭'} ${p.username}
+            ${p.isAI?`<span class="ai-badge">AI</span>`:''}
+            ${isMe?'<span class="me-tag">You</span>':''}
+          </div>
+          <div class="player-score-badge">${p.score} pts</div>
+        </div>
+        <div class="player-cards-mini">${chips}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderChat(messages) {
+  const box = document.getElementById('chatMessages');
+  if (!messages || messages.length === 0) return;
+  box.innerHTML = messages.map(m => `
+    <div class="chat-msg">
+      <span class="chat-sender">${m.sender}</span>${m.text}<span class="chat-time">${m.timestamp}</span>
+    </div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── Make move ──────────────────────────────────────
+async function pickCard(displayIndex) {
+  if (!gameId || !myUsername) return;
+  try {
+    const res = await fetch(`${API}/${gameId}/move`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:myUsername, displayIndex})
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error||t('invalidMove'), 'error'); return; }
+    lastState = data;
+    renderGameState(data);
+    if (data.finished) { stopPolling(); setTimeout(()=>showWinner(data), 700); }
+  } catch(_) { showToast('Server error.', 'error'); }
+}
+
+// ── Chat ───────────────────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !gameId || !myUsername) return;
+  input.value = '';
+  try {
+    const res = await fetch(`${API}/${gameId}/chat`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({sender:myUsername, text})
+    });
+    const data = await res.json();
+    if (res.ok) renderChat(data.chatMessages);
+  } catch(_) {}
+}
+
+// ── Leaderboard ────────────────────────────────────
+async function loadLeaderboard(tbodyId) {
+  try {
+    const res = await fetch(`${USER_API}/leaderboard`);
+    const rows = await res.json();
+    const tbody = document.getElementById(tbodyId);
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1rem">No data yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((r,i) => `
+      <tr class="${i===0?'rank-1':''}">
+        <td>${i===0?'👑':i+1}</td>
+        <td>${r.username}</td>
+        <td class="lb-wins">${r.wins}</td>
+        <td>${r.games}</td>
+        <td>${r.winRate}%</td>
+      </tr>`).join('');
+  } catch(_) {
+    document.getElementById(tbodyId).innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Could not load</td></tr>';
+  }
+}
+
+async function showLeaderboardScreen() {
+  showScreen('leaderboard-screen');
+  await loadLeaderboard('leaderboardBody');
+}
+
+// ── Winner ─────────────────────────────────────────
+async function showWinner(state) {
+  document.getElementById('winnerTitle').textContent = '⚜️ '+t('victory');
+  document.getElementById('winnerMsg').textContent = state.winnerMessage || 'Game over!';
+  const sorted = [...state.playerSummaries].sort((a,b)=>b.score-a.score);
+  document.getElementById('scoreboardRows').innerHTML = sorted.map((p,i) => `
+    <div class="score-row ${i===0?'winner-row':''}">
+      <div class="score-player">
+        <div class="rank-badge ${i===0?'rank-1':''}">${i+1}</div>
+        ${p.username} ${p.isAI?'🤖':''}
+      </div>
+      <div class="score-pts">${p.score} pts</div>
+    </div>`).join('');
+  showScreen('winner-screen');
+  await loadLeaderboard('winnerLeaderboard');
+}
+
+// ── Toast ──────────────────────────────────────────
+function showToast(msg, type='') {
+  const c = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type?'toast-'+type:''}`;
+  toast.textContent = msg;
+  c.appendChild(toast);
+  setTimeout(()=>toast.remove(), 3500);
+}
+
+// ── Init ───────────────────────────────────────────
+applyTranslations();
+updatePlayerInputs();
+</script>
+</body>
+</html>

@@ -5,9 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class MajestyBitApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(MajestyBitApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(MajestyBitApplication.class, args);
+    }
 }

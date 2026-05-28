@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import lombok.Data;
-
 @Entity
 @Table(name = "matches")
 public class Match {

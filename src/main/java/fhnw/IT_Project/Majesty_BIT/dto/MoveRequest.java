@@ -1,10 +1,17 @@
 package fhnw.IT_Project.Majesty_BIT.dto;
 
-import lombok.Data;
-
-@Data
 public class MoveRequest {
-    private String username; // Who is making the move?
-    private int displayIndex; // Which card from the center display (0-5) are they taking?
+    private String username;
+    private int displayIndex;
 
+    public MoveRequest() {}
+    public MoveRequest(String username, int displayIndex) {
+        this.username = username;
+        this.displayIndex = displayIndex;
+    }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public int getDisplayIndex() { return displayIndex; }
+    public void setDisplayIndex(int displayIndex) { this.displayIndex = displayIndex; }
 }

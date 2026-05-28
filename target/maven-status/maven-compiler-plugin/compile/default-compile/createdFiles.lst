@@ -1,0 +1,7 @@
+fhnw/IT_Project/Majesty_BIT/dto/LoginRequest.class
+fhnw/IT_Project/Majesty_BIT/dto/ChatRequest.class
+fhnw/IT_Project/Majesty_BIT/dto/GameStateResponse$ChatMessageDto.class
+fhnw/IT_Project/Majesty_BIT/service/UserService.class
+fhnw/IT_Project/Majesty_BIT/dto/CreateGameRequest.class
+fhnw/IT_Project/Majesty_BIT/controller/UserController.class
+fhnw/IT_Project/Majesty_BIT/model/domain/ChatMessage.class
